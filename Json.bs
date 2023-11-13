@@ -1,0 +1,74 @@
+package Json where
+
+import Vector
+import BuildVector
+import List
+
+class JSON a where
+  toJSON   :: a -> Fmt 
+
+-- Explicit instances for primitive types
+instance JSON (Bit n) where
+  toJSON x = $format "%d" x
+
+instance JSON (UInt a) where
+  toJSON x = $format "%d" x
+
+instance JSON (Int a) where
+  toJSON x = $format "%d" x
+
+instance JSON (Fmt) where
+  toJSON x = x
+
+instance JSON Real where
+  toJSON x = $format (realToString x)
+
+instance JSON Char where
+  toJSON x = $format "'%s'" (charToString x)
+
+instance JSON String where
+  toJSON x = $format "\"%s\"" x
+
+-- Generic default instance
+instance (Generic a r, JSON' r) => JSON a where
+  toJSON x  = toJSON' $ from x
+
+class incoherent JSON' r where
+  toJSON'   :: r -> Fmt  
+
+instance (JSON' r1 , JSON' r2) => JSON' (r1, r2) where
+  toJSON' (x, y) =  (toJSON' x) + $format "," + (toJSON' y)
+
+instance (JSON' r1 , JSON' r2) => JSON' (Either r1 r2) where
+  toJSON' (Left x) = toJSON' x
+  toJSON' (Right x) = toJSON' x
+
+-- How to handle sum types in databases?
+
+instance  JSON' () where
+  toJSON' () = $format "0" -- TODO check () = void = Bit#(0) ?
+
+instance (JSON' r) => JSON' (Meta (MetaConsAnon name idx nfields) r) where
+  toJSON' (Meta x) = ($format "{ \"bsv_constructor\": \"%s\", " (stringOf name)) + (toJSON' x) + $format "}"
+
+instance (JSON' r) => JSON' (Meta (MetaConsNamed name idx nfields) r) where
+  toJSON' (Meta x) = ($format "{ \"bsv_constructor\" : \"%s\", " (stringOf name))+ (toJSON' x)  + $format "}"
+
+instance (JSON' r) => JSON' (Meta (MetaData name pkg ta ncons) r) where
+  toJSON' (Meta x) = toJSON' x
+
+instance (JSON' r) => JSON' (Meta (MetaField str num) r) where
+  toJSON' (Meta x) = $format " \"%s\" : " (stringOf str) + toJSON' x 
+
+instance (JSON' a) => JSON' (Vector n a) where
+  toJSON' v =
+    let contents =
+          if valueOf n > 0
+          then List.foldr1 (\ a b -> $format a ", " b) $ List.map toJSON' $ Vector.toList v
+          else $format ""
+    in $format "[" contents "]"
+
+-- TODO add support for polymorphism
+
+instance (JSON a) => JSON' (Conc a) where
+  toJSON' (Conc x) = toJSON x
