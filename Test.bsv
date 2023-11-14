@@ -30,7 +30,7 @@ module mkTest(Empty);
 
     rule do_init (init);
         init <= False;
-        File fl <- $fopen ("Dump.json");
+        File fl <- $fopen ("/tmp/data.json");
         file <= fl;
     endrule
 
