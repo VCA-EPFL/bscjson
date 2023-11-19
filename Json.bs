@@ -11,6 +11,10 @@ class JSON a where
 instance JSON (Bit n) where
   toJSON x = $format "%d" x
 
+instance JSON (Bool) where
+  toJSON True = $format "true"
+  toJSON False = $format "false"
+
 instance JSON (UInt a) where
   toJSON x = $format "%d" x
 
