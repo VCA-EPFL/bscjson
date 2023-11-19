@@ -6,6 +6,7 @@ bsv2mongo:
 .PHONY=clean run
 
 clean: 
+	rm -rf build/
 	rm -f bsv2mongo bsv2mongo.so 
 
 run: bsv2mongo
